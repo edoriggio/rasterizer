@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="./modules/gl-matrix-min.js"></script>
+
+    <script src="./src/main.js"></script>
+    <script src="./src/shader.js"></script>
+    <script src="./src/shapes/triangle.js"></script>
+    <script src="./src/shapes/cube.js"></script>
+  </head>
+
+  <body onload="start();">
+    <canvas id="webgl-canvas" width="768" height="768"></canvas>
+
+    <div style="float: right">
+      <div class="slidecontainer">
+        Rotation:</br><input type="range" min="0" max="200" value="100" id="rotation">
+      </div>
+    </div>
+  </body>
+</html>
