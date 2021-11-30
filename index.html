@@ -3,14 +3,22 @@
     <meta charset="UTF-8">
     <script src="./modules/gl-matrix-min.js"></script>
 
-    <script src="./src/main.js"></script>
-    <script src="./src/shader.js"></script>
+    <script src="./src/main.js" type="module"></script>
+
+    <script src="./src/shader.js" type="module"></script>
+    <script src="./src/shader/vertex.js" type="module"></script>
+    <script src="./src/shader/fragment.js" type="module"></script>
+
     <script src="./src/shapes/cube.js"></script>
-    <script src="./src/shapes/sphere.js"></script>
     <script src="./src/shapes/plane.js"></script>
+    <script src="./src/shapes/sphere.js"></script>
+
+    <script type="module">
+      import main from './src/main.js'; main();
+    </script>
   </head>
 
-<body onload="start();">
+<body>
   <canvas id="webgl-canvas" width="768" height="768"></canvas>
 
   <div  style="float: right">

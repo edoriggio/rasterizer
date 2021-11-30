@@ -1,56 +1,12 @@
-var vertexShaderCode =
-  `#version 300 es
-  in vec3 a_position;
-  in vec3 a_color;
-
-  uniform mat4 modelMatrix;
-  uniform mat4 viewMatrix;
-  uniform mat4 projectionMatrix;
-
-  // Exercise 3: add input attribute for normals
-  //             add output variables required for light computation, e.g., normal, view direction etc.
-  //             add here also a uniform for light direction, unless you pass it directly to the fragment shader
-
-  out vec3 v_color;
-
-  void main() {
-    v_color = a_color;
-
-    // compute all the variables required for light computation in the fragment shader
-    // remember that all the locations and vectors have to be in a common space, e.g., eye/camera space
-
-    // replace the rotationMatrix with correct transformations
-
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(a_position, 1.0);
-  }`;
-
-var fragmentShaderCode =
-  `#version 300 es
-  precision mediump float;
-
-  in vec3 v_color;
-
-  // Exercise 3: add all the input variable passed from the vertex shader
-  //             if the do not include the light direction, you should add here an additional uniform for it
-  //             you can also add here constants for Phong shading model, e.g., light color, ambient, diffuse, and specular coefficients, gamma value, as well as shininess
-
-
-  out vec4 out_color;
-
-  void main() {
-    // Exercise 3: add computation of Phong shading
-    //             do not forget about: normalizing all vectors beforehand, (2) performing gamma correction at the end
-
-    out_color = vec4(v_color, 1.0);
-  }`;
-
+import vertexShaderCode from "./shader/vertex.js";
+import fragmentShaderCode from "./shader/fragment.js";
 
 var gl; // WebGL context
 var shaderProgram; // The GLSL program we will use for rendering
-var triangle_vao; // The vertex array object for the triangle
-var cube_vao; // The cube array object for the cube
 
-// Exercise 2: you may want to add here variable for VAO of plane and sphere
+var cube_vao; // The cube array object for the cube
+var sphere_vao; // The sphere array object for the sphere
+var plane_vao; // The plane array object for the plane
 
 /**
  * Function to initialize the WebGL context.
@@ -129,18 +85,8 @@ function createGLSLPrograms() {
   shaderProgram.rotationMatrix = gl.getUniformLocation(shaderProgram, "rotationMatrix");
 }
 
-// Exercise 2:
-// Since one has to repeat creating VAO of each object (cube, plane, sphere) separately,
-// we suggest implement a function which takes the arrays containing values of the attributes,
-// and then, creates VBOa, VAOs, and sets up the attributes.
-// This should later simplify your code in initBuffers() to something like:
-//      cube_vao = gl.createVertexArray();
-//      createVAO(cube_vao, shaderProgram, cube_vertices, cube_normals, cube_colors);
-//      sphere_vao = gl.createVertexArray();
-//      createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_vertices, sphere_colors);
-//      plane_vao = gl.createVertexArray();
-//      createVAO(plane_vao, shaderProgram, plane_vertices, plane_normals, plane_colors);
-function createVAO(vao, shader, vertices, colors) {
+
+function createVAO(vao, shader, vertices, colors, normals) {
   var vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -148,6 +94,10 @@ function createVAO(vao, shader, vertices, colors) {
   var colorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+  var normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
   
   gl.bindVertexArray(vao);
   
@@ -160,21 +110,25 @@ function createVAO(vao, shader, vertices, colors) {
   var colorAttributeLocation = gl.getAttribLocation(shader, "a_color");
   gl.enableVertexAttribArray(colorAttributeLocation);
   gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-}
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  var normalAttributeLocation = gl.getAttribLocation(shader, "a_normal");
+  gl.enableVertexAttribArray(normalAttributeLocation);
+  gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+}
 
 /**
  * Function to initialize the buffers.
  */
 function initBuffers() {
   cube_vao = gl.createVertexArray();
-  createVAO(cube_vao, shaderProgram, cube_vertices, cube_colors);
+  createVAO(cube_vao, shaderProgram, cube_vertices, cube_colors, cube_normals);
 
   sphere_vao = gl.createVertexArray();
-  createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors);
+  createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors, sphere_normals);
 
   plane_vao = gl.createVertexArray();
-  createVAO(plane_vao, shaderProgram, plane_vertices, plane_colors);
+  createVAO(plane_vao, shaderProgram, plane_vertices, plane_colors, plane_normals);
 }
 
 /**
@@ -189,15 +143,15 @@ function draw() {
   let light_polar_angle = document.getElementById("light_polar_angle").value / 360 * 2 * Math.PI;
 
   // Camera position
-  let camera_x = camera_distance * Math.cos(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
-  let camera_y = camera_distance * Math.sin(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
-  let camera_z = camera_distance * Math.cos(camera_polar_angle);
+  let camera_x = camera_distance * Math.sin(camera_polar_angle) * Math.sin(camera_azimuthal_angle);
+  let camera_y = camera_distance * Math.cos(camera_polar_angle);
+  let camera_z = camera_distance * Math.sin(camera_polar_angle) * Math.cos(camera_azimuthal_angle);
   let camera_position = vec3.fromValues(camera_x, camera_y, camera_z);
 
   // Light direction
-  let light_x = Math.sin(light_polar_angle) * Math.cos(light_azimuthal_angle);
-  let light_y = Math.sin(light_polar_angle) * Math.sin(light_azimuthal_angle);
-  let light_z = Math.cos(light_polar_angle);
+  let light_x = Math.sin(light_polar_angle) * Math.sin(light_azimuthal_angle);
+  let light_y = Math.cos(light_polar_angle);
+  let light_z = Math.sin(light_polar_angle) * Math.cos(light_azimuthal_angle);
   let lightDirection = vec3.fromValues(light_x, light_y, light_z);
 
   // Set up the viewport
@@ -214,6 +168,7 @@ function draw() {
   let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
   let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
   let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
+  let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "lightDirection");
 
   let viewMatrix = mat4.create();
   mat4.lookAt(viewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
@@ -222,8 +177,10 @@ function draw() {
   mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.1, 50);
 
   gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
-  gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);  
+  gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
+  gl.uniform3fv(lightDirectionLocation, lightDirection);
 
+  // Draw the cubes
   gl.bindVertexArray(cube_vao);
   gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(-1.5, 0, 0)));
   gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
@@ -232,14 +189,16 @@ function draw() {
   gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(1.5, 0, 0)));
   gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
 
+  // Draw the sphere
   gl.bindVertexArray(sphere_vao);
   gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0.0, 0, 0)));
   gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
 
   gl.bindVertexArray(plane_vao);
 
+  // Draw the plane
   let plane_modelMatrix = mat4.create();
-  mat4.fromTranslation(plane_modelMatrix, vec3.fromValues(0, -0.51, 0));
+  mat4.fromTranslation(plane_modelMatrix, vec3.fromValues(0, -0.5, 0));
   mat4.scale(plane_modelMatrix, plane_modelMatrix, vec3.fromValues(20, 20, 20));
 
   gl.uniformMatrix4fv(modelMatrixLocation, false, plane_modelMatrix);
@@ -247,3 +206,5 @@ function draw() {
 
   window.requestAnimationFrame(function () { draw(); });
 }
+
+export default { initBuffers, draw, initWebGL, createGLSLPrograms };

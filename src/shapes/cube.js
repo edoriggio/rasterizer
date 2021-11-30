@@ -101,8 +101,25 @@ const cube_colors = [
 var cube_normals = [];
 
 function compute_normals(vertices, normals) {
-  // Exercise 3: implement the function which computes normals of the cube
-  // and add them to cube_normals
+  for(var i = 0; i < vertices.length; i += 9) {
+    var v1 = vec3.fromValues(vertices[i], vertices[i+1], vertices[i+2]);
+    var v2 = vec3.fromValues(vertices[i+3], vertices[i+4], vertices[i+5]);
+    var v3 = vec3.fromValues(vertices[i+6], vertices[i+7], vertices[i+8]);
+
+    var v1v2 = vec3.create();
+    var v1v3 = vec3.create();
+
+    vec3.subtract(v1v2, v2, v1);
+    vec3.subtract(v1v3, v3, v1);
+
+    var n = vec3.create();
+    vec3.cross(n, v1v2, v1v3);
+    vec3.normalize(n, n);
+
+    for (var j = 0; j < 3; j++) {
+      normals.push(n[0], n[1], n[2]);
+    }
+  }
 }
 
 compute_normals(cube_vertices,cube_normals);
