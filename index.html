@@ -3,25 +3,50 @@
     <meta charset="UTF-8">
     <script src="./modules/gl-matrix-min.js"></script>
 
-    <script src="./src/main.js"></script>
-    <script src="./src/shader.js"></script>
-    <script src="./src/shapes/triangle.js"></script>
+    <script src="./src/main.js" type="module"></script>
+
+    <script src="./src/shader.js" type="module"></script>
+    <script src="./src/shader/vertex.js" type="module"></script>
+    <script src="./src/shader/fragment.js" type="module"></script>
+
     <script src="./src/shapes/cube.js"></script>
+    <script src="./src/shapes/plane.js"></script>
+    <script src="./src/shapes/sphere.js"></script>
+
+    <script type="module">
+      import main from './src/main.js'; main();
+    </script>
   </head>
 
-  <body onload="start();">
-    <canvas id="webgl-canvas" width="768" height="768"></canvas>
+<body>
+  <canvas id="webgl-canvas" width="768" height="768"></canvas>
 
-    <div style="float: right">
-      <div class="slidecontainer">
-        Rotation:</br><input type="range" min="0" max="200" value="100" id="rotation"><br>
-
-        Item:</br>
-        <select name="item" id="item">
-          <option value="triangle">Triangle</option>
-          <option value="cube">Cube</option>
-        </select>
-      </div>
+  <div  style="float: right">
+    <h4>Camera:</h4>
+    <div class="slidecontainer">
+      Azimuthal angle:</br><input type="range" min="-270" max="90" value="-45" id="camera_azimuthal_angle">
     </div>
-  </body>
+
+    <div class="slidecontainer">
+      Polar angle:</br><input type="range" min="1" max="179" value="60" id="camera_polar_angle">
+    </div>
+
+    <div class="slidecontainer">
+      Distance:</br><input type="range" min="20" max="200" value="50" id="camera_distance">
+    </div>
+
+    <div class="slidecontainer">
+      Field of view:</br><input type="range" min="10" max="150" value="45" id="camera_fov">
+    </div>
+
+    <h4>Light:</h4>
+    <div class="slidecontainer">
+      Azimuthal angle:</br><input type="range" min="-270" max="90" value="-70" id="light_azimuthal_angle">
+    </div>
+
+    <div class="slidecontainer">
+      Polar angle:</br><input type="range" min="1" max="90" value="60" id="light_polar_angle">
+    </div>
+  </div>
+</body>
 </html>

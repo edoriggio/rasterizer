@@ -1,34 +1,12 @@
-var vertexShaderCode =
-  `#version 300 es
-  in vec3 a_position;
-  in vec3 a_color;
-
-  uniform mat4 rotationMatrix;
-
-  out vec3 v_color;
-
-  void main() {
-    gl_Position = rotationMatrix * vec4(a_position, 1.0);
-    v_color = a_color;
-  }`;
-
-var fragmentShaderCode =
-  `#version 300 es
-  precision mediump float;
-
-  in vec3 v_color;
-  out vec4 out_color;
-
-  void main() {
-    out_color = vec4(v_color, 1.0);
-  }`;
-
+import vertexShaderCode from "./shader/vertex.js";
+import fragmentShaderCode from "./shader/fragment.js";
 
 var gl; // WebGL context
 var shaderProgram; // The GLSL program we will use for rendering
-var triangle_vao; // The vertex array object for the triangle
-var cube_vao; // The cube array object for the cube
 
+var cube_vao; // The cube array object for the cube
+var sphere_vao; // The sphere array object for the sphere
+var plane_vao; // The plane array object for the plane
 
 /**
  * Function to initialize the WebGL context.
@@ -41,7 +19,7 @@ function initWebGL() {
   gl.viewportHeight = canvas.height;
 
   if (gl) {
-    console.log("WebGL succesfully initialized.");
+    console.log("WebGL successfully initialized.");
   } else {
     console.log("Failed to initialize WebGL.")
   }
@@ -62,7 +40,7 @@ function compileShader(shader, source, type, name = "") {
   let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
 
   if (success) {
-    console.log(name + " shader compiled succesfully.");
+    console.log(name + " shader compiled successfully.");
   } else {
     console.log(name + " vertex shader error.")
     console.log(gl.getShaderInfoLog(shader));
@@ -108,67 +86,73 @@ function createGLSLPrograms() {
 }
 
 
+function createVAO(vao, shader, vertices, colors, normals) {
+  var vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  
+  var colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+  var normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+  
+  gl.bindVertexArray(vao);
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  var positionAttributeLocation = gl.getAttribLocation(shader, "a_position");
+  gl.enableVertexAttribArray(positionAttributeLocation);
+  gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  var colorAttributeLocation = gl.getAttribLocation(shader, "a_color");
+  gl.enableVertexAttribArray(colorAttributeLocation);
+  gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  var normalAttributeLocation = gl.getAttribLocation(shader, "a_normal");
+  gl.enableVertexAttribArray(normalAttributeLocation);
+  gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+}
+
 /**
  * Function to initialize the buffers.
  */
 function initBuffers() {
-  // Set up the vertex position for the triangle
-  var triangleVertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangle_vertices), gl.STATIC_DRAW);
-
-  var triangleColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangle_colors), gl.STATIC_DRAW);
-
-  // Set up the vertex position for the cube
-  var cubeVertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube_vertices), gl.STATIC_DRAW);
-
-  var cubeColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeColorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube_colors), gl.STATIC_DRAW);
-
-  // Set up the VAO for the triangle
-  triangle_vao = gl.createVertexArray();
-  gl.bindVertexArray(triangle_vao);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBuffer);
-  var positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
-  gl.enableVertexAttribArray(positionAttributeLocation);
-  gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorBuffer);
-  var colorAttributeLocation = gl.getAttribLocation(shaderProgram, "a_color");
-  gl.enableVertexAttribArray(colorAttributeLocation);
-  gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-  // Set up the VAO for the cube
   cube_vao = gl.createVertexArray();
-  gl.bindVertexArray(cube_vao);
+  createVAO(cube_vao, shaderProgram, cube_vertices, cube_colors, cube_normals);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexBuffer);
-  var positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
-  gl.enableVertexAttribArray(positionAttributeLocation);
-  gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+  sphere_vao = gl.createVertexArray();
+  createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors, sphere_normals);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, cubeColorBuffer);
-  var colorAttributeLocation = gl.getAttribLocation(shaderProgram, "a_color");
-  gl.enableVertexAttribArray(colorAttributeLocation);
-  gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+  plane_vao = gl.createVertexArray();
+  createVAO(plane_vao, shaderProgram, plane_vertices, plane_colors, plane_normals);
 }
 
 /**
  * Function to draw the scene.
  */
 function draw() {
-  var rotation = document.getElementById("rotation");
-  var rotationMatrix = mat4.create();
-  mat4.fromRotation(rotationMatrix, -(rotation.value - 100) / 100 * Math.PI, vec3.fromValues(-0.2, 1, 0));
+  let camera_azimuthal_angle = document.getElementById("camera_azimuthal_angle").value / 360 * 2 * Math.PI;
+  let camera_polar_angle = document.getElementById("camera_polar_angle").value / 360 * 2 * Math.PI;
+  let camera_distance = document.getElementById("camera_distance").value / 10;
+  let camera_fov = document.getElementById("camera_fov").value / 360 * 2 * Math.PI;
+  let light_azimuthal_angle = document.getElementById("light_azimuthal_angle").value / 360 * 2 * Math.PI;
+  let light_polar_angle = document.getElementById("light_polar_angle").value / 360 * 2 * Math.PI;
 
-  var select = document.getElementById('item');
-  var shape = select.options[select.selectedIndex].value;
+  // Camera position
+  let camera_x = camera_distance * Math.sin(camera_polar_angle) * Math.sin(camera_azimuthal_angle);
+  let camera_y = camera_distance * Math.cos(camera_polar_angle);
+  let camera_z = camera_distance * Math.sin(camera_polar_angle) * Math.cos(camera_azimuthal_angle);
+  let camera_position = vec3.fromValues(camera_x, camera_y, camera_z);
+
+  // Light direction
+  let light_x = Math.sin(light_polar_angle) * Math.sin(light_azimuthal_angle);
+  let light_y = Math.cos(light_polar_angle);
+  let light_z = Math.sin(light_polar_angle) * Math.cos(light_azimuthal_angle);
+  let lightDirection = vec3.fromValues(light_x, light_y, light_z);
 
   // Set up the viewport
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -180,15 +164,47 @@ function draw() {
 
   // Enable the GLSL program for the rendering
   gl.useProgram(shaderProgram);
-  gl.uniformMatrix4fv(shaderProgram.rotationMatrix, false, rotationMatrix);
 
-  if (shape === "triangle") {
-    gl.bindVertexArray(triangle_vao);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  } else if (shape === "cube") {
-    gl.bindVertexArray(cube_vao);
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
-  }
+  let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
+  let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
+  let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
+  let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "lightDirection");
+
+  let viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+
+  let projectionMatrix = mat4.create();
+  mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.1, 50);
+
+  gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
+  gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
+  gl.uniform3fv(lightDirectionLocation, lightDirection);
+
+  // Draw the cubes
+  gl.bindVertexArray(cube_vao);
+  gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(-1.5, 0, 0)));
+  gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
+
+  gl.bindVertexArray(cube_vao);
+  gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(1.5, 0, 0)));
+  gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
+
+  // Draw the sphere
+  gl.bindVertexArray(sphere_vao);
+  gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0.0, 0, 0)));
+  gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
+
+  gl.bindVertexArray(plane_vao);
+
+  // Draw the plane
+  let plane_modelMatrix = mat4.create();
+  mat4.fromTranslation(plane_modelMatrix, vec3.fromValues(0, -0.5, 0));
+  mat4.scale(plane_modelMatrix, plane_modelMatrix, vec3.fromValues(20, 20, 20));
+
+  gl.uniformMatrix4fv(modelMatrixLocation, false, plane_modelMatrix);
+  gl.drawArrays(gl.TRIANGLES, 0, plane_vertices.length / 3);
 
   window.requestAnimationFrame(function () { draw(); });
 }
+
+export default { initBuffers, draw, initWebGL, createGLSLPrograms };
