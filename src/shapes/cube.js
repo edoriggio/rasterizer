@@ -73,7 +73,7 @@ const cube_colors = [
   0.0, 0.8, 0.0,
   0.0, 0.8, 0.0,
 
-  // Bottom fac
+  // Bottom face
   0.0, 0.0, 0.8,
   0.0, 0.0, 0.8,
   0.0, 0.0, 0.8,
@@ -122,4 +122,4 @@ function compute_normals(vertices, normals) {
   }
 }
 
-compute_normals(cube_vertices,cube_normals);
+compute_normals(cube_vertices, cube_normals);

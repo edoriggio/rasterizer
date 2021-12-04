@@ -3,16 +3,16 @@ in vec3 a_position;
 in vec3 a_color;
 in vec3 a_normal;
 
-out vec3 v_color;
-out vec3 v_normal;
-out vec3 v_lightDirection;
-out vec3 v_viewDirection;
-
 uniform mat4 viewMatrix;
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 viewDirection;
 uniform vec3 lightDirection;
+
+out vec3 v_color;
+out vec3 v_normal;
+out vec3 v_lightDirection;
+out vec3 v_viewDirection;
 
 void main() {
   v_color = a_color;
