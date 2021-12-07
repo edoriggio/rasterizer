@@ -135,8 +135,8 @@ function initBuffers() {
   // cube_vao = gl.createVertexArray();
   // createVAO(cube_vao, shaderProgram, cube_vertices, cube_colors, cube_normals);
 
-  // sphere_vao = gl.createVertexArray();
-  // createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors, sphere_normals);
+  sphere_vao = gl.createVertexArray();
+  createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors, sphere_normals);
 
   // plane_vao = gl.createVertexArray();
   // createVAO(plane_vao, shaderProgram, plane_vertices, plane_colors, plane_normals);
@@ -177,6 +177,7 @@ function draw() {
   let light_polar_angle = document.getElementById("light_polar_angle").value / 360 * 2 * Math.PI;
   let terrain_scale = document.getElementById("terrain_scale").value / 100;
   let terrain_bias = document.getElementById("terrain_bias").value / 100;
+  let water_level = document.getElementById("water_level").value / 1000;
 
   // Camera position
   let camera_x = camera_distance * Math.sin(camera_polar_angle) * Math.sin(camera_azimuthal_angle);
@@ -199,16 +200,26 @@ function draw() {
   gl.enable(gl.DEPTH_TEST);
 
   // Enable the GLSL program for the rendering
-  // gl.useProgram(shaderProgram);
+  gl.useProgram(shaderProgram);
 
-  // let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
-  // let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
-  // let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
-  // let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "lightDirection");
+  let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
+  let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
+  let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
+  let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "lightDirection");
 
-  // gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
-  // gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
-  // gl.uniform3fv(lightDirectionLocation, lightDirection);
+  let projectionMatrix = mat4.create();
+  mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.01, 50);
+
+  let viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+
+  let modelMatrix = mat4.create();
+  modelMatrix = mat4.scale(mat4.create(), mat4.create(), vec3.fromValues(0.1, 0.1, 0.1));
+  modelMatrix = mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, 3.0, 0));
+
+  gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
+  gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
+  gl.uniform3fv(lightDirectionLocation, lightDirection);
 
   // Draw the cubes
   // gl.bindVertexArray(cube_vao);
@@ -220,9 +231,9 @@ function draw() {
   // gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
 
   // Draw the sphere
-  // gl.bindVertexArray(sphere_vao);
-  // gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0)));
-  // gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
+  gl.bindVertexArray(sphere_vao);
+  gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix);
+  gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
 
   // gl.bindVertexArray(plane_vao);
 
@@ -238,26 +249,21 @@ function draw() {
   //---------- Drawing the terrain-----------------
   //-----------------------------------------------
 
-  // You have to start using the new shader program for terrain rendering.
-  // Remember to pass all the matrices and the illumination information
-  // Remember to get first all the locations of the uniforms in the new GLSL program
-  // and then set up the values their values.
-
   gl.useProgram(terrainShaderProgram);
 
   let tBias = gl.getUniformLocation(terrainShaderProgram, "bias");
   let tScale = gl.getUniformLocation(terrainShaderProgram, "scale");
-  // let tBias = gl.getUniformLocation(terrainShaderProgram, "bias");
-  let tModelMatrixLocation = gl.getUniformLocation(terrainShaderProgram, "modelMatrix");
+  let tWater = gl.getUniformLocation(terrainShaderProgram, "waterLevel");
   let tViewMatrixLocation = gl.getUniformLocation(terrainShaderProgram, "viewMatrix");
+  let tModelMatrixLocation = gl.getUniformLocation(terrainShaderProgram, "modelMatrix");
+  let tLightDirectionLocation = gl.getUniformLocation(terrainShaderProgram, "lightDirection");
   let tProjectionMatrixLocation = gl.getUniformLocation(terrainShaderProgram, "projectionMatrix");
-  // let tLightDirectionLocation = gl.getUniformLocation(terrainShaderProgram, "lightDirection");
 
-  let viewMatrix = mat4.create();
-  mat4.lookAt(viewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+  let tViewMatrix = mat4.create();
+  mat4.lookAt(tViewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
 
-  let projectionMatrix = mat4.create();
-  mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.01, 50);
+  let tProjectionMatrix = mat4.create();
+  mat4.perspective(tProjectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.01, 50);
 
   for (let i = 0; i < terrainTextures.length; i++) {
     let textureLocation = gl.getUniformLocation(terrainShaderProgram, terrainTextures[i].uniformName);
@@ -267,12 +273,13 @@ function draw() {
     gl.uniform1i(textureLocation, i);
   }
 
+  gl.uniform1f(tWater, water_level);
   gl.uniform1f(tBias, terrain_bias);
   gl.uniform1f(tScale, terrain_scale);
+  gl.uniform3fv(tLightDirectionLocation, lightDirection);
   gl.uniformMatrix4fv(tModelMatrixLocation, false, mat4.create());
   gl.uniformMatrix4fv(tViewMatrixLocation, false, viewMatrix);
   gl.uniformMatrix4fv(tProjectionMatrixLocation, false, projectionMatrix);
-  // gl.uniform3fv(tLightDirectionLocation, lightDirection);
 
   gl.bindVertexArray(terrain_vao);
   gl.drawArrays(gl.TRIANGLES, 0, terrain_vertices.length / 3);
