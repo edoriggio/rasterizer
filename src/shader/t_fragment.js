@@ -16,7 +16,7 @@ uniform sampler2D snowSampler;
 
 const vec3 ambientCoefficient = vec3(0.1);
 const vec3 diffuseCoefficient = vec3(0.5);
-const vec3 specularCoefficient = vec3(0.1);
+const vec3 specularCoefficient = vec3(0.0);
 const float shininess = 50.0;
 
 out vec4 out_color;
